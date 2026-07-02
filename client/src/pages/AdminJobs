@@ -1,0 +1,192 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+export default function AdminJobs() {
+  const [jobs, setJobs] = useState([]);
+
+  const [form, setForm] = useState({
+    jobTitle: "",
+    company: "",
+    location: "",
+    experience: "",
+    skills: "",
+    description: ""
+  });
+
+  const [editId, setEditId] = useState(null);
+  const [showEdit, setShowEdit] = useState(false);
+
+  // LOAD JOBS
+  const fetchJobs = async () => {
+    const res = await axios.get("http://localhost:5000/api/jobs");
+    setJobs(res.data.jobs);
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  // ADD JOB
+  const addJob = async () => {
+    await axios.post("http://localhost:5000/api/jobs", {
+      ...form,
+      skills: form.skills.split(",").map(s => s.trim())
+    });
+
+    setForm({
+      jobTitle: "",
+      company: "",
+      location: "",
+      experience: "",
+      skills: "",
+      description: ""
+    });
+
+    fetchJobs();
+  };
+
+  // DELETE JOB
+  const deleteJob = async (id) => {
+    await axios.delete(`http://localhost:5000/api/jobs/${id}`);
+    fetchJobs();
+  };
+
+  // OPEN EDIT POPUP
+  const openEdit = (job) => {
+    setEditId(job._id);
+    setForm({
+      jobTitle: job.jobTitle,
+      company: job.company,
+      location: job.location,
+      experience: job.experience,
+      skills: job.skills.join(", "),
+      description: job.description
+    });
+    setShowEdit(true);
+  };
+
+  // UPDATE JOB
+  const updateJob = async () => {
+    await axios.put(`http://localhost:5000/api/jobs/${editId}`, {
+      ...form,
+      skills: form.skills.split(",").map(s => s.trim())
+    });
+
+    setShowEdit(false);
+    setEditId(null);
+
+    setForm({
+      jobTitle: "",
+      company: "",
+      location: "",
+      experience: "",
+      skills: "",
+      description: ""
+    });
+
+    fetchJobs();
+  };
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h2>🛠 Admin Job Panel</h2>
+
+      {/* ADD FORM */}
+      <div style={{ marginBottom: 20 }}>
+        <h3>Add Job</h3>
+
+        <input placeholder="Job Title" value={form.jobTitle}
+          onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} />
+
+        <input placeholder="Company" value={form.company}
+          onChange={(e) => setForm({ ...form, company: e.target.value })} />
+
+        <input placeholder="Location" value={form.location}
+          onChange={(e) => setForm({ ...form, location: e.target.value })} />
+
+        <input placeholder="Experience" value={form.experience}
+          onChange={(e) => setForm({ ...form, experience: e.target.value })} />
+
+        <input placeholder="Skills (comma separated)" value={form.skills}
+          onChange={(e) => setForm({ ...form, skills: e.target.value })} />
+
+        <input placeholder="Description" value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })} />
+
+        <button onClick={addJob}>Add Job</button>
+      </div>
+
+      {/* JOB LIST */}
+      <h3>All Jobs</h3>
+
+      {jobs.map(job => (
+        <div key={job._id} style={{
+          border: "1px solid gray",
+          margin: 10,
+          padding: 10
+        }}>
+          <h4>{job.jobTitle}</h4>
+          <p>{job.company}</p>
+
+          <button onClick={() => openEdit(job)}>
+            ✏️ Edit
+          </button>
+
+          <button onClick={() => deleteJob(job._id)} style={{ marginLeft: 10 }}>
+            ❌ Delete
+          </button>
+        </div>
+      ))}
+
+      {/* EDIT POPUP */}
+      {showEdit && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center"
+        }}>
+          <div style={{
+            background: "white",
+            padding: 20,
+            borderRadius: 10,
+            width: "400px"
+          }}>
+            <h3>Edit Job</h3>
+
+            <input placeholder="Job Title" value={form.jobTitle}
+              onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} />
+
+            <input placeholder="Company" value={form.company}
+              onChange={(e) => setForm({ ...form, company: e.target.value })} />
+
+            <input placeholder="Location" value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })} />
+
+            <input placeholder="Experience" value={form.experience}
+              onChange={(e) => setForm({ ...form, experience: e.target.value })} />
+
+            <input placeholder="Skills" value={form.skills}
+              onChange={(e) => setForm({ ...form, skills: e.target.value })} />
+
+            <input placeholder="Description" value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })} />
+
+            <button onClick={updateJob}>
+              Save Changes
+            </button>
+
+            <button onClick={() => setShowEdit(false)} style={{ marginLeft: 10 }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
